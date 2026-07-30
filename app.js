@@ -236,6 +236,9 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden-view'));
         document.getElementById(targetId).classList.remove('hidden-view');
         
+        // Refrescar el dashboard al entrar a Reportes (renderDashboard no hace nada mientras el tab está oculto)
+        if (targetId === 'tab-reports' && typeof renderDashboard === 'function') renderDashboard();
+        
         // Mobile Sidebar Close
         if (window.innerWidth < 768) {
             document.getElementById('sidebar').classList.add('-translate-x-full');
@@ -1018,10 +1021,10 @@ function renderAuditoria() {
     const term = (document.getElementById('srch-audit')?.value || '').toLowerCase();
     
     const filtered = logsAuditoria.filter(log => 
-        log.modulo.toLowerCase().includes(term) ||
-        log.accion.toLowerCase().includes(term) ||
-        log.usuario.toLowerCase().includes(term) ||
-        log.detalle.toLowerCase().includes(term)
+        (log.Modulo || '').toLowerCase().includes(term) ||
+        (log.Accion || '').toLowerCase().includes(term) ||
+        (log.Usuario || '').toLowerCase().includes(term) ||
+        (log.Detalles || '').toLowerCase().includes(term)
     );
     
     tbody.innerHTML = '';
@@ -1032,22 +1035,22 @@ function renderAuditoria() {
     }
     
     filtered.forEach(log => {
-        const dateObj = new Date(log.fecha);
+        const dateObj = new Date(log.Fecha);
         const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
         
         // Color coding for modules
         let moduleColor = 'bg-gray-100 text-gray-700';
-        if (log.modulo === 'Inventario') moduleColor = 'bg-blue-100 text-blue-700';
-        else if (log.modulo === 'Ventas') moduleColor = 'bg-green-100 text-green-700';
-        else if (log.modulo === 'Seguridad') moduleColor = 'bg-purple-100 text-purple-700';
+        if (log.Modulo === 'Inventario') moduleColor = 'bg-blue-100 text-blue-700';
+        else if (log.Modulo === 'Ventas') moduleColor = 'bg-green-100 text-green-700';
+        else if (log.Modulo === 'Seguridad') moduleColor = 'bg-purple-100 text-purple-700';
 
         tbody.innerHTML += `
             <tr class="hover:bg-gray-50 border-b border-gray-100">
                 <td class="p-4 text-gray-500 whitespace-nowrap">${dateStr}</td>
-                <td class="p-4 font-medium text-gray-700">${log.usuario}</td>
-                <td class="p-4"><span class="${moduleColor} px-2 py-1 rounded text-xs font-bold">${log.modulo}</span></td>
-                <td class="p-4 text-gray-800">${log.accion}</td>
-                <td class="p-4 text-gray-600 text-xs">${log.detalle}</td>
+                <td class="p-4 font-medium text-gray-700">${log.Usuario}</td>
+                <td class="p-4"><span class="${moduleColor} px-2 py-1 rounded text-xs font-bold">${log.Modulo}</span></td>
+                <td class="p-4 text-gray-800">${log.Accion}</td>
+                <td class="p-4 text-gray-600 text-xs">${log.Detalles}</td>
             </tr>
         `;
     });
@@ -1380,8 +1383,8 @@ window.renderDashboard = () => {
     
     let productCounts = {};
     ventasFiltradas.forEach(v => {
-        if(v.carrito) {
-            v.carrito.forEach(item => {
+        if(v.items) {
+            v.items.forEach(item => {
                 if(!productCounts[item.id]) {
                     productCounts[item.id] = { name: item.nombre, qty: 0, revenue: 0 };
                 }
@@ -1751,12 +1754,7 @@ window.renderInventario = () => {
 
 // --- Modal and Product Edit/Delete ---
 window.openNewProductModal = () => {
-    document.getElementById('form-producto').reset();
-    document.getElementById('prod-id').value = '';
-    document.getElementById('mod-prod-title').innerText = 'Nuevo Producto';
-    document.getElementById('preview-img').src = '';
-    document.getElementById('preview-img').classList.add('hidden');
-    document.getElementById('preview-icon').classList.remove('hidden');
+    resetProductModal();
     openModal('mod-producto');
 };
 
@@ -1771,18 +1769,19 @@ window.editProducto = (id) => {
     document.getElementById('prod-precio').value = p.precio_venta || '';
     document.getElementById('prod-stock').value = p.stock || 0;
     document.getElementById('prod-alerta').value = p.alerta_minimo || 5;
-    document.getElementById('prod-prov-nombre').value = p.proveedor?.nombre || '';
-    document.getElementById('prod-prov-tel').value = p.proveedor?.telefono || '';
-    document.getElementById('prod-prov-correo').value = p.proveedor?.correo || '';
+    document.getElementById('prod-prov-nombre').value = p.proveedor_nombre || '';
+    document.getElementById('prod-prov-tel').value = p.proveedor_tel || '';
+    document.getElementById('prod-prov-correo').value = p.proveedor_correo || '';
     
+    currentImageBase64 = null;
     if (p.imagen_url) {
-        document.getElementById('preview-img').src = p.imagen_url;
-        document.getElementById('preview-img').classList.remove('hidden');
-        document.getElementById('preview-icon').classList.add('hidden');
+        prodImgPreview.src = p.imagen_url;
+        prodImgPreview.classList.remove('hidden');
+        prodImgPlaceholder.classList.add('hidden');
     } else {
-        document.getElementById('preview-img').src = '';
-        document.getElementById('preview-img').classList.add('hidden');
-        document.getElementById('preview-icon').classList.remove('hidden');
+        prodImgPreview.src = '';
+        prodImgPreview.classList.add('hidden');
+        prodImgPlaceholder.classList.remove('hidden');
     }
     
     openModal('mod-producto');
