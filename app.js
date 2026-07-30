@@ -1,12 +1,12 @@
-﻿// Firebase Configuration
+// Firebase Configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyB6XbZbLR8C1osz3yEprlYL5vuCnbKX6eo",
-  authDomain: "puntoventa-ffd33.firebaseapp.com",
-  projectId: "puntoventa-ffd33",
-  storageBucket: "puntoventa-ffd33.firebasestorage.app",
-  messagingSenderId: "618852946172",
-  appId: "1:618852946172:web:0ef1c8b3094c27490d0779",
-  measurementId: "G-8S57RYLNEB"
+    apiKey: "AIzaSyB6XbZbLR8C1osz3yEprlYL5vuCnbKX6eo",
+    authDomain: "puntoventa-ffd33.firebaseapp.com",
+    projectId: "puntoventa-ffd33",
+    storageBucket: "puntoventa-ffd33.firebasestorage.app",
+    messagingSenderId: "618852946172",
+    appId: "1:618852946172:web:0ef1c8b3094c27490d0779",
+    measurementId: "G-8S57RYLNEB"
 };
 
 // Initialize Firebase (Compat Version)
@@ -31,13 +31,13 @@ try {
         document.documentElement.style.setProperty('--color-secondary', globalConfig.color_primary);
         document.documentElement.style.setProperty('--color-accent', globalConfig.color_accent);
         document.documentElement.style.setProperty('--color-accent-hover', globalConfig.color_accent);
-        
+
         // The script is at the end of the body, so the DOM is already parsed
         document.querySelectorAll('.app-title-display').forEach(el => el.innerText = globalConfig.nombre_tienda);
         document.title = globalConfig.nombre_tienda + " - Punto de Venta";
-        
+
         document.querySelectorAll('.app-logo-display').forEach(img => {
-            if(globalConfig.logo_b64) {
+            if (globalConfig.logo_b64) {
                 img.src = globalConfig.logo_b64;
                 img.classList.remove('hidden');
             }
@@ -54,7 +54,7 @@ let userRole = 'auxiliar'; // Default to lowest privilege
 // --- UI Helpers ---
 window.openModal = (id) => {
     const m = document.getElementById(id);
-    if(m) {
+    if (m) {
         m.classList.remove('hidden');
         setTimeout(() => m.classList.remove('opacity-0'), 10);
         setTimeout(() => m.querySelector('.transform').classList.remove('scale-95'), 10);
@@ -63,7 +63,7 @@ window.openModal = (id) => {
 
 window.closeModal = (id) => {
     const m = document.getElementById(id);
-    if(m) {
+    if (m) {
         m.classList.add('opacity-0');
         m.querySelector('.transform').classList.add('scale-95');
         setTimeout(() => m.classList.add('hidden'), 300);
@@ -73,15 +73,15 @@ window.closeModal = (id) => {
 const showToast = (message, type = 'success') => {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
+
     const toast = document.createElement('div');
     toast.className = `toast px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-sm font-medium ${type === 'error' ? 'toast-error' : type === 'info' ? 'toast-info' : 'toast-success'}`;
-    
+
     const icon = type === 'error' ? 'fa-circle-xmark' : type === 'info' ? 'fa-circle-info' : 'fa-circle-check';
     toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span>${message}</span>`;
-    
+
     container.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(20px)';
@@ -92,7 +92,7 @@ const showToast = (message, type = 'success') => {
 
 // --- Auth UI Logic ---
 const togglePwdBtn = document.getElementById('btn-toggle-pwd');
-if(togglePwdBtn) {
+if (togglePwdBtn) {
     togglePwdBtn.addEventListener('click', () => {
         const pwdInput = document.getElementById('auth-password');
         const iconPwd = document.getElementById('icon-pwd');
@@ -114,11 +114,11 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const password = document.getElementById('auth-password').value;
     const btn = document.getElementById('btn-login');
     const errDiv = document.getElementById('login-error');
-    
+
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
     btn.disabled = true;
     errDiv.classList.add('hidden');
-    
+
     try {
         await auth.signInWithEmailAndPassword(email, password);
         // onAuthStateChanged will handle the UI transition
@@ -153,24 +153,28 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 // --- Auth State Observer ---
 auth.onAuthStateChanged(async (user) => {
     const loader = document.getElementById('global-loader');
-    
+
     if (user) {
         currentUser = user;
         document.getElementById('user-display').innerText = user.email;
-        
+
         // Fetch user role
         try {
             const roleDoc = await db.collection("Seguridad_Roles").doc(user.uid).get();
             if (roleDoc.exists) {
                 userRole = roleDoc.data().rol || 'auxiliar';
             } else {
-                userRole = 'admin'; 
-                await db.collection("Seguridad_Roles").doc(user.uid).set({ rol: 'admin', email: user.email });
+                // Sin documento de rol: por seguridad, se asume el privilegio m&iacute;nimo.
+                // Un administrador debe asignar el rol desde la pesta&ntilde;a "Usuarios",
+                // o el primer admin debe crearse manualmente en la consola de Firebase
+                // (colecci&oacute;n Seguridad_Roles, ID de documento = UID del usuario, campo rol: "admin").
+                userRole = 'auxiliar';
             }
         } catch (e) {
             console.error("Error fetching role:", e);
+            userRole = 'auxiliar';
         }
-        
+
         // Setup UI based on Role
         document.getElementById('user-role-display').innerText = userRole === 'admin' ? 'Administrador' : 'Auxiliar';
         const adminElements = document.querySelectorAll('.admin-only');
@@ -181,16 +185,16 @@ auth.onAuthStateChanged(async (user) => {
                 el.classList.add('hidden-view');
             }
         });
-        
+
         // Iniciar listeners de la base de datos ahora que estamos autenticados
-        if(typeof initDataListeners === 'function') {
+        if (typeof initDataListeners === 'function') {
             initDataListeners();
         }
-        
+
         // Switch View
         document.getElementById('auth-view').classList.add('hidden-view');
         document.getElementById('app-view').classList.remove('hidden-view');
-        
+
         // Default Tab
         document.querySelector('[data-target="tab-pos"]').click();
     } else {
@@ -202,15 +206,15 @@ auth.onAuthStateChanged(async (user) => {
         document.getElementById('btn-login').disabled = false;
         document.getElementById('login-error').classList.add('hidden');
     }
-    
+
     // Hide loader
     setTimeout(() => {
-        if(loader) loader.classList.add('hidden-view');
+        if (loader) loader.classList.add('hidden-view');
     }, 500);
-    
+
     // Hide loader
     setTimeout(() => {
-        if(loader) loader.classList.add('hidden-view');
+        if (loader) loader.classList.add('hidden-view');
     }, 500);
 });
 
@@ -218,7 +222,7 @@ auth.onAuthStateChanged(async (user) => {
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         const targetId = e.currentTarget.dataset.target;
-        
+
         // Update Buttons
         document.querySelectorAll('.nav-btn').forEach(b => {
             b.classList.remove('bg-secondary/80', 'text-white');
@@ -228,17 +232,17 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
         e.currentTarget.classList.add('bg-secondary/80', 'text-white');
         e.currentTarget.classList.remove('text-gray-300');
         e.currentTarget.querySelector('i').classList.add('text-accent');
-        
+
         // Update Title
         document.getElementById('top-title').innerText = e.currentTarget.querySelector('span').innerText;
-        
+
         // Update Views
         document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden-view'));
         document.getElementById(targetId).classList.remove('hidden-view');
-        
+
         // Refrescar el dashboard al entrar a Reportes (renderDashboard no hace nada mientras el tab está oculto)
         if (targetId === 'tab-reports' && typeof renderDashboard === 'function') renderDashboard();
-        
+
         // Mobile Sidebar Close
         if (window.innerWidth < 768) {
             document.getElementById('sidebar').classList.add('-translate-x-full');
@@ -325,21 +329,21 @@ function compressImage(file, maxSize = 500) {
     });
 }
 
-if(prodImgInput) {
-    prodImgInput.addEventListener('change', async function(e) {
+if (prodImgInput) {
+    prodImgInput.addEventListener('change', async function (e) {
         const file = e.target.files[0];
         if (file) {
             // Mostrar estado de carga visual
             prodImgPlaceholder.querySelector('span').innerText = "Comprimiendo...";
-            
+
             // Comprimir imagen y obtener Base64
             currentImageBase64 = await compressImage(file);
-            
+
             // Mostrar previsualizaci&oacute;n
             prodImgPreview.src = currentImageBase64;
             prodImgPreview.classList.remove('hidden');
             prodImgPlaceholder.classList.add('hidden');
-            
+
             // Restaurar texto
             prodImgPlaceholder.querySelector('span').innerText = "Subir imagen";
         }
@@ -351,11 +355,11 @@ window.resetProductModal = () => {
     document.getElementById('form-producto').reset();
     document.getElementById('prod-id').value = '';
     currentImageBase64 = null;
-    if(prodImgPreview) {
+    if (prodImgPreview) {
         prodImgPreview.src = '';
         prodImgPreview.classList.add('hidden');
     }
-    if(prodImgPlaceholder) prodImgPlaceholder.classList.remove('hidden');
+    if (prodImgPlaceholder) prodImgPlaceholder.classList.remove('hidden');
     document.getElementById('mod-prod-title').innerText = "Nuevo Producto";
 };
 
@@ -363,12 +367,12 @@ window.resetProductModal = () => {
 const originalCloseModal = window.closeModal;
 window.closeModal = (id) => {
     originalCloseModal(id);
-    if(id === 'mod-producto') setTimeout(resetProductModal, 300);
+    if (id === 'mod-producto') setTimeout(resetProductModal, 300);
 };
 
 // Guardar Producto (Crear / Editar)
 const btnSaveProd = document.getElementById('btn-save-prod');
-if(btnSaveProd) {
+if (btnSaveProd) {
     btnSaveProd.addEventListener('click', async () => {
         const id = document.getElementById('prod-id').value;
         const nombre = document.getElementById('prod-nombre').value.trim();
@@ -377,13 +381,13 @@ if(btnSaveProd) {
         const precio = Number(document.getElementById('prod-precio').value || 0);
         const stock = Number(document.getElementById('prod-stock').value || 0);
         const alerta = Number(document.getElementById('prod-alerta').value || 0);
-        
+
         // Proveedor
         const provNombre = document.getElementById('prod-prov-nombre').value.trim();
         const provTel = document.getElementById('prod-prov-tel').value.trim();
         const provCorreo = document.getElementById('prod-prov-correo').value.trim();
 
-        if(!nombre || !precio || stock < 0) {
+        if (!nombre || !precio || stock < 0) {
             showToast("Por favor completa los campos obligatorios (*)", "error");
             return;
         }
@@ -402,7 +406,7 @@ if(btnSaveProd) {
             }
 
             showToast("Guardando datos en la base de datos...", "info");
-            
+
             // 2. Preparar Datos
             const productData = {
                 id: docId,
@@ -435,7 +439,7 @@ if(btnSaveProd) {
             if (stockDiff > 0 && costo > 0) {
                 const montoGasto = stockDiff * costo;
                 const newGasto = {
-                    fecha: new Date().toISOString(),
+                    Fecha: new Date().toISOString(),
                     tipo: 'Compra Inventario',
                     concepto: `Ingreso de ${stockDiff} uds de ${nombre}`,
                     monto: montoGasto,
@@ -472,24 +476,24 @@ let unsubAuditoria = null;
 let unsubUsuarios = null;
 
 window.initDataListeners = () => {
-    if(listenersIniciados) return;
+    if (listenersIniciados) return;
     listenersIniciados = true;
-    
+
     unsubProductos = db.collection("Productos").onSnapshot((snapshot) => {
         productosGlobal = [];
         snapshot.forEach(doc => {
             productosGlobal.push({ id: doc.id, ...doc.data() });
         });
         renderInventario();
-        if(typeof renderPOSProducts === 'function') renderPOSProducts();
+        if (typeof renderPOSProducts === 'function') renderPOSProducts();
     }, e => console.error("Error productos:", e));
 
-    if(typeof initCategoriasListener === 'function') initCategoriasListener();
-    if(typeof initGastosListener === 'function') initGastosListener();
-    if(typeof initAuditoriaListener === 'function') initAuditoriaListener();
-    if(typeof initUsuariosListener === 'function') initUsuariosListener();
-    if(typeof initVentasListener === 'function') initVentasListener();
-    if(typeof initConfiguracionListener === 'function') initConfiguracionListener();
+    if (typeof initCategoriasListener === 'function') initCategoriasListener();
+    if (typeof initGastosListener === 'function') initGastosListener();
+    if (typeof initAuditoriaListener === 'function') initAuditoriaListener();
+    if (typeof initUsuariosListener === 'function') initUsuariosListener();
+    if (typeof initVentasListener === 'function') initVentasListener();
+    if (typeof initConfiguracionListener === 'function') initConfiguracionListener();
 };
 
 // ==========================================
@@ -506,7 +510,7 @@ window.initCategoriasListener = () => {
                 categoriasGlobal.push({ id: doc.id, ...doc.data() });
             });
             // Ordenar alfab&eacute;ticamente protegiendo contra nombres indefinidos
-            categoriasGlobal.sort((a,b) => String(a.nombre || "").localeCompare(String(b.nombre || "")));
+            categoriasGlobal.sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || "")));
             renderCategorias();
         } catch (error) {
             console.error("Error procesando categor&iacute;as:", error);
@@ -541,7 +545,7 @@ function renderCategorias() {
             });
         }
     }
-    
+
     // Update select in product modal
     const select = document.getElementById('prod-cat');
     if (select) {
@@ -558,13 +562,13 @@ window.addCategoria = async () => {
     const input = document.getElementById('nueva-cat');
     const nombre = input.value.trim();
     if (!nombre) return;
-    
+
     // Check if exists (case insensitive)
     if (categoriasGlobal.find(c => c.nombre.toLowerCase() === nombre.toLowerCase())) {
         showToast("La categor&iacute;a ya existe", "error");
         return;
     }
-    
+
     try {
         const docId = db.collection("Categorias").doc().id;
         await db.collection("Categorias").doc(docId).set({
@@ -582,14 +586,14 @@ window.addCategoria = async () => {
 window.editCategoria = async (id, currentName) => {
     const nuevoNombre = prompt("Editar nombre de la categor&iacute;a:", currentName);
     if (!nuevoNombre || nuevoNombre.trim() === currentName) return;
-    
+
     const nombre = nuevoNombre.trim();
-    
+
     if (categoriasGlobal.find(c => c.id !== id && c.nombre.toLowerCase() === nombre.toLowerCase())) {
         showToast("Ya existe otra categor&iacute;a con ese nombre", "error");
         return;
     }
-    
+
     try {
         await db.collection("Categorias").doc(id).update({
             nombre: nombre
@@ -603,7 +607,7 @@ window.editCategoria = async (id, currentName) => {
 };
 
 window.deleteCategoria = async (id, nombre) => {
-    if(confirm(`&iquest;Eliminar la categor&iacute;a "${nombre}"?`)) {
+    if (confirm(`&iquest;Eliminar la categor&iacute;a "${nombre}"?`)) {
         try {
             await db.collection("Categorias").doc(id).delete();
             await logAuditChange('Inventario', 'Eliminar Categor&iacute;a', id, `Eliminada categor&iacute;a: ${nombre}`);
@@ -625,26 +629,26 @@ let posTotal = 0;
 window.renderPOSProducts = () => {
     const grid = document.getElementById('pos-grid');
     if (!grid) return;
-    
+
     const term = (document.getElementById('srch-pos')?.value || '').toLowerCase();
-    
-    const filtered = productosGlobal.filter(p => 
+
+    const filtered = productosGlobal.filter(p =>
         p.stock > 0 && // Solo productos con stock
         (p.nombre.toLowerCase().includes(term) || (p.categoria && p.categoria.toLowerCase().includes(term)))
     );
-    
+
     grid.innerHTML = '';
-    
+
     if (filtered.length === 0) {
         grid.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">No hay productos disponibles</div>`;
         return;
     }
-    
+
     filtered.forEach(p => {
-        const imgHtml = p.imagen_url 
+        const imgHtml = p.imagen_url
             ? `<img src="${p.imagen_url}" class="w-full h-32 object-cover">`
             : `<div class="w-full h-32 bg-gray-100 flex items-center justify-center text-gray-300 text-3xl"><i class="fa-solid fa-box"></i></div>`;
-            
+
         grid.innerHTML += `
             <div onclick="addToCart('${p.id}')" class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md cursor-pointer transition-shadow group">
                 ${imgHtml}
@@ -666,7 +670,7 @@ document.getElementById('srch-pos')?.addEventListener('input', renderPOSProducts
 window.addToCart = (id) => {
     const p = productosGlobal.find(x => x.id === id);
     if (!p || p.stock <= 0) return;
-    
+
     const existing = cart.find(item => item.id === id);
     if (existing) {
         if (existing.qty < p.stock) {
@@ -704,8 +708,8 @@ window.deleteFromCart = (id) => {
 };
 
 window.clearCart = () => {
-    if(cart.length === 0) return;
-    if(confirm('&iquest;Seguro que deseas vaciar el carrito?')) {
+    if (cart.length === 0) return;
+    if (confirm('&iquest;Seguro que deseas vaciar el carrito?')) {
         cart = [];
         renderCart();
     }
@@ -716,12 +720,12 @@ window.renderCart = () => {
     const subtotalEl = document.getElementById('cart-subtotal');
     const totalEl = document.getElementById('cart-total');
     const btnCobrar = document.getElementById('btn-cobrar');
-    
+
     if (!container) return;
-    
+
     container.innerHTML = '';
     posTotal = 0;
-    
+
     if (cart.length === 0) {
         container.innerHTML = `
             <div class="text-center text-gray-400 py-10 text-sm">
@@ -734,11 +738,11 @@ window.renderCart = () => {
         btnCobrar.disabled = true;
         return;
     }
-    
+
     cart.forEach(item => {
         const sub = item.precio * item.qty;
         posTotal += sub;
-        
+
         container.innerHTML += `
             <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100 mb-2 flex flex-col gap-2">
                 <div class="flex justify-between items-start">
@@ -756,7 +760,7 @@ window.renderCart = () => {
             </div>
         `;
     });
-    
+
     subtotalEl.innerText = `Q${posTotal.toFixed(2)}`;
     totalEl.innerText = `Q${posTotal.toFixed(2)}`;
     btnCobrar.disabled = false;
@@ -764,7 +768,7 @@ window.renderCart = () => {
 
 // Cobro
 window.openCobroModal = () => {
-    if(cart.length === 0) return;
+    if (cart.length === 0) return;
     document.getElementById('cobro-total').innerText = `Q${posTotal.toFixed(2)}`;
     document.getElementById('cobro-efectivo').value = '';
     document.getElementById('cobro-cambio').innerText = 'Q0.00';
@@ -778,7 +782,7 @@ window.calcularCambio = () => {
     const cambio = efectivo - posTotal;
     const btn = document.getElementById('btn-confirmar-pago');
     const cambioEl = document.getElementById('cobro-cambio');
-    
+
     if (efectivo >= posTotal) {
         cambioEl.innerText = `Q${cambio.toFixed(2)}`;
         cambioEl.classList.remove('text-red-500');
@@ -796,18 +800,18 @@ window.procesarPago = async () => {
     const btn = document.getElementById('btn-confirmar-pago');
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Procesando...';
     btn.disabled = true;
-    
+
     try {
         const batch = db.batch();
         const ventaId = db.collection("Ventas").doc().id;
         const nit = document.getElementById('cobro-nit').value || 'CF';
         const nombre = document.getElementById('cobro-nombre').value || 'Consumidor Final';
         const direccion = document.getElementById('cobro-direccion').value || '';
-        
+
         // 1. Crear documento de Venta
         batch.set(db.collection("Ventas").doc(ventaId), {
             id: ventaId,
-            fecha: new Date().toISOString(),
+            Fecha: new Date().toISOString(),
             vendedor: currentUser.email,
             total: posTotal,
             efectivo: Number(document.getElementById('cobro-efectivo').value),
@@ -816,7 +820,7 @@ window.procesarPago = async () => {
             direccion: direccion,
             items: cart.map(c => ({ id: c.id, nombre: c.nombre, precio: c.precio, cantidad: c.qty }))
         });
-        
+
         // 2. Restar Stock de Inventario
         cart.forEach(item => {
             const prodRef = db.collection("Productos").doc(item.id);
@@ -825,17 +829,17 @@ window.procesarPago = async () => {
                 stock: firebase.firestore.FieldValue.increment(-item.qty)
             });
         });
-        
+
         await batch.commit();
-        
+
         // 3. Auditor&iacute;a general
         await logAuditChange('Ventas', 'Nueva Venta', ventaId, `Venta por Q${posTotal.toFixed(2)} (${cart.length} art&iacute;culos)`);
-        
+
         showToast("Venta completada exitosamente", "success");
         closeModal('mod-cobro');
         cart = [];
         renderCart();
-        
+
     } catch (error) {
         console.error("Error al procesar pago:", error);
         showToast("Hubo un error al procesar el pago", "error");
@@ -851,13 +855,13 @@ window.procesarPago = async () => {
 let ventasGlobal = [];
 
 window.initVentasListener = () => {
-    unsubVentas = db.collection("Ventas").orderBy("fecha", "desc").limit(100).onSnapshot(snapshot => {
+    unsubVentas = db.collection("Ventas").orderBy("Fecha", "desc").limit(100).onSnapshot(snapshot => {
         ventasGlobal = [];
         snapshot.forEach(doc => {
             ventasGlobal.push(doc.data());
         });
         renderVentas();
-        if(typeof renderDashboard === 'function') renderDashboard();
+        if (typeof renderDashboard === 'function') renderDashboard();
     }, error => {
         console.error("Error de Firebase en Ventas:", error);
     });
@@ -865,31 +869,31 @@ window.initVentasListener = () => {
 
 window.renderVentas = () => {
     const tbody = document.getElementById('tbl-ventas');
-    if(!tbody) return;
-    
+    if (!tbody) return;
+
     const term = (document.getElementById('srch-ventas')?.value || '').toLowerCase();
-    
-    const filtered = ventasGlobal.filter(v => 
+
+    const filtered = ventasGlobal.filter(v =>
         (v.nombre_cliente && v.nombre_cliente.toLowerCase().includes(term)) ||
         (v.nit && v.nit.toLowerCase().includes(term)) ||
         (v.vendedor && v.vendedor.toLowerCase().includes(term)) ||
         (v.id && v.id.toLowerCase().includes(term))
     );
-    
+
     tbody.innerHTML = '';
-    
-    if(filtered.length === 0) {
+
+    if (filtered.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">No hay ventas registradas</td></tr>';
         return;
     }
-    
+
     filtered.forEach(v => {
-        const d = new Date(v.fecha);
-        const fechaStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
+        const d = new Date(v.Fecha);
+        const FechaStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
         tbody.innerHTML += `
             <tr class="hover:bg-gray-50/50 transition-colors">
-                <td class="p-4 align-middle font-medium text-gray-700">${fechaStr}</td>
+                <td class="p-4 align-middle font-medium text-gray-700">${FechaStr}</td>
                 <td class="p-4 align-middle text-gray-600">${v.nombre_cliente || '-'}</td>
                 <td class="p-4 align-middle text-gray-600">${v.nit || '-'}</td>
                 <td class="p-4 align-middle text-gray-500 text-sm">${v.vendedor}</td>
@@ -906,11 +910,11 @@ window.renderVentas = () => {
 
 window.openReciboModal = (ventaId) => {
     const venta = ventasGlobal.find(v => v.id === ventaId);
-    if(!venta) return;
-    
+    if (!venta) return;
+
     const content = document.getElementById('ticket-content');
-    const d = new Date(venta.fecha);
-    
+    const d = new Date(venta.Fecha);
+
     let html = `
         <div class="text-center mb-4 border-b border-dashed border-gray-300 pb-4">
             ${globalConfig.logo_b64 ? `<img src="${globalConfig.logo_b64}" class="w-16 h-16 mx-auto object-cover rounded-lg mb-2">` : ''}
@@ -919,7 +923,7 @@ window.openReciboModal = (ventaId) => {
         </div>
         <div class="mb-4 text-xs space-y-1">
             <p><strong>Fecha:</strong> ${d.toLocaleDateString()} ${d.toLocaleTimeString()}</p>
-            <p><strong>Recibo #:</strong> ${venta.id.substring(0,8)}</p>
+            <p><strong>Recibo #:</strong> ${venta.id.substring(0, 8)}</p>
             <p><strong>Vendedor:</strong> ${venta.vendedor}</p>
         </div>
         <div class="mb-4 text-xs space-y-1 bg-gray-50 p-2 rounded border border-gray-200">
@@ -934,7 +938,7 @@ window.openReciboModal = (ventaId) => {
                 <th class="text-right pb-1">Monto</th>
             </tr>
     `;
-    
+
     venta.items.forEach(i => {
         html += `
             <tr>
@@ -944,7 +948,7 @@ window.openReciboModal = (ventaId) => {
             </tr>
         `;
     });
-    
+
     html += `
         </table>
         <div class="border-t border-dashed border-gray-300 pt-3 space-y-1 text-right">
@@ -956,7 +960,7 @@ window.openReciboModal = (ventaId) => {
             <p>&iexcl;Gracias por su compra!</p>
         </div>
     `;
-    
+
     content.innerHTML = html;
     openModal('mod-recibo');
 };
@@ -1005,7 +1009,7 @@ window.imprimirRecibo = () => {
 let logsAuditoria = [];
 
 window.initAuditoriaListener = () => {
-    unsubAuditoria = db.collection("Historial_Cambios").orderBy("fecha", "desc").limit(100).onSnapshot(snapshot => {
+    unsubAuditoria = db.collection("Historial_Cambios").orderBy("Fecha", "desc").limit(100).onSnapshot(snapshot => {
         logsAuditoria = [];
         snapshot.forEach(doc => {
             logsAuditoria.push(doc.data());
@@ -1016,28 +1020,28 @@ window.initAuditoriaListener = () => {
 
 function renderAuditoria() {
     const tbody = document.getElementById('tbl-auditoria');
-    if(!tbody) return;
-    
+    if (!tbody) return;
+
     const term = (document.getElementById('srch-audit')?.value || '').toLowerCase();
-    
-    const filtered = logsAuditoria.filter(log => 
+
+    const filtered = logsAuditoria.filter(log =>
         (log.Modulo || '').toLowerCase().includes(term) ||
         (log.Accion || '').toLowerCase().includes(term) ||
         (log.Usuario || '').toLowerCase().includes(term) ||
         (log.Detalles || '').toLowerCase().includes(term)
     );
-    
+
     tbody.innerHTML = '';
-    
-    if(filtered.length === 0) {
+
+    if (filtered.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-400">No se encontraron registros</td></tr>';
         return;
     }
-    
+
     filtered.forEach(log => {
         const dateObj = new Date(log.Fecha);
         const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
-        
+
         // Color coding for modules
         let moduleColor = 'bg-gray-100 text-gray-700';
         if (log.Modulo === 'Inventario') moduleColor = 'bg-blue-100 text-blue-700';
@@ -1084,19 +1088,19 @@ window.initUsuariosListener = () => {
 
 function renderUsuarios() {
     const tbody = document.getElementById('tbl-usuarios');
-    if(!tbody) return;
-    
+    if (!tbody) return;
+
     tbody.innerHTML = '';
-    if(usuariosGlobal.length === 0) {
+    if (usuariosGlobal.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-gray-400">No hay usuarios</td></tr>';
         return;
     }
-    
+
     usuariosGlobal.forEach(u => {
-        const roleBadge = u.rol === 'admin' 
+        const roleBadge = u.rol === 'admin'
             ? '<span class="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-bold">Administrador</span>'
             : '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">Auxiliar</span>';
-            
+
         tbody.innerHTML += `
             <tr class="hover:bg-gray-50 border-b border-gray-100">
                 <td class="p-4 font-medium text-gray-700">${u.email}</td>
@@ -1112,7 +1116,7 @@ function renderUsuarios() {
 }
 
 window.eliminarRol = async (uid, email) => {
-    if(confirm(`&iquest;Est&aacute;s seguro de quitarle el acceso a ${email}? (Esto no borra su cuenta de Firebase, pero le impide entrar al sistema)`)) {
+    if (confirm(`&iquest;Est&aacute;s seguro de quitarle el acceso a ${email}? (Esto no borra su cuenta de Firebase, pero le impide entrar al sistema)`)) {
         try {
             await db.collection("Seguridad_Roles").doc(uid).delete();
             await logAuditChange('Seguridad', 'Eliminaci&oacute;n de Rol', uid, `Se revoc&oacute; acceso a: ${email}`);
@@ -1131,36 +1135,36 @@ if (btnSaveUsr) {
         const email = document.getElementById('usr-email').value.trim();
         const pass = document.getElementById('usr-pass').value;
         const rol = document.getElementById('usr-rol').value;
-        
-        if(!email || pass.length < 6) {
+
+        if (!email || pass.length < 6) {
             showToast("El correo es requerido y la contrase&ntilde;a debe tener al menos 6 caracteres", "error");
             return;
         }
-        
+
         btnSaveUsr.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creando...';
         btnSaveUsr.disabled = true;
-        
+
         try {
             // Inicializar App Secundaria para evitar que cierre la sesi&oacute;n del Admin actual
             const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
             const res = await secondaryApp.auth().createUserWithEmailAndPassword(email, pass);
-            
+
             // Asignar el rol en Firestore
             await db.collection("Seguridad_Roles").doc(res.user.uid).set({
                 email: email,
                 rol: rol
             });
-            
+
             // Cerrar sesi&oacute;n y eliminar app secundaria
             await secondaryApp.auth().signOut();
             await secondaryApp.delete();
-            
+
             await logAuditChange('Seguridad', 'Nuevo Usuario', res.user.uid, `Creado el usuario ${email} con rol: ${rol}`);
-            
+
             showToast("Empleado creado exitosamente");
             closeModal('mod-usuario');
             document.getElementById('form-usuario').reset();
-            
+
         } catch (error) {
             console.error("Error creating user:", error);
             showToast("Error al crear usuario (Revisa que el correo no exista ya)", "error");
@@ -1179,7 +1183,7 @@ if (btnSaveUsr) {
 
 window.initConfiguracionListener = () => {
     db.collection("Configuracion").doc("global").onSnapshot(doc => {
-        if(doc.exists) {
+        if (doc.exists) {
             const data = doc.data();
             globalConfig = { ...globalConfig, ...data };
         }
@@ -1195,16 +1199,16 @@ function aplicarConfiguracionUI() {
     document.documentElement.style.setProperty('--color-secondary', globalConfig.color_primary); // Usamos primary como base
     document.documentElement.style.setProperty('--color-accent', globalConfig.color_accent);
     document.documentElement.style.setProperty('--color-accent-hover', globalConfig.color_accent);
-    
+
     // Aplicar Nombre
     const tituloElements = document.querySelectorAll('.app-title-display');
     tituloElements.forEach(el => el.innerText = globalConfig.nombre_tienda);
     document.title = globalConfig.nombre_tienda + " - Punto de Venta";
-    
+
     // Aplicar Logo en UI
     const logos = document.querySelectorAll('.app-logo-display');
     logos.forEach(img => {
-        if(globalConfig.logo_b64) {
+        if (globalConfig.logo_b64) {
             img.src = globalConfig.logo_b64;
             img.classList.remove('hidden');
         } else {
@@ -1216,24 +1220,24 @@ function aplicarConfiguracionUI() {
     const iptNombre = document.getElementById('conf-nombre');
     const iptColorP = document.getElementById('conf-color-primary');
     const iptColorA = document.getElementById('conf-color-accent');
-    
-    if(iptNombre) iptNombre.value = globalConfig.nombre_tienda;
-    if(iptColorP) {
+
+    if (iptNombre) iptNombre.value = globalConfig.nombre_tienda;
+    if (iptColorP) {
         iptColorP.value = globalConfig.color_primary;
         document.getElementById('conf-color-primary-val').textContent = globalConfig.color_primary;
     }
-    if(iptColorA) {
+    if (iptColorA) {
         iptColorA.value = globalConfig.color_accent;
         document.getElementById('conf-color-accent-val').textContent = globalConfig.color_accent;
     }
-    
+
     // Guardar en LocalStorage para tematizar antes del login
     localStorage.setItem('omnipos_config', JSON.stringify(globalConfig));
-    
-    if(globalConfig.logo_b64) {
+
+    if (globalConfig.logo_b64) {
         const preview = document.getElementById('conf-logo-preview');
         const icon = document.getElementById('conf-logo-icon');
-        if(preview && icon) {
+        if (preview && icon) {
             preview.src = globalConfig.logo_b64;
             preview.classList.remove('hidden');
             icon.classList.add('hidden');
@@ -1245,14 +1249,14 @@ function aplicarConfiguracionUI() {
 const confLogoInput = document.getElementById('conf-logo');
 let tempConfLogoB64 = null;
 
-if(confLogoInput) {
+if (confLogoInput) {
     confLogoInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if(!file) return;
-        
+        if (!file) return;
+
         const preview = document.getElementById('conf-logo-preview');
         const icon = document.getElementById('conf-logo-icon');
-        
+
         const reader = new FileReader();
         reader.onload = (ev) => {
             const img = new Image();
@@ -1263,24 +1267,24 @@ if(confLogoInput) {
                 const MAX_HEIGHT = 300;
                 let width = img.width;
                 let height = img.height;
-                
+
                 if (width > height) {
-                  if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                  }
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
                 } else {
-                  if (height > MAX_HEIGHT) {
-                    width *= MAX_HEIGHT / height;
-                    height = MAX_HEIGHT;
-                  }
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
                 }
-                
+
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                
+
                 tempConfLogoB64 = canvas.toDataURL('image/jpeg', 0.8);
                 preview.src = tempConfLogoB64;
                 preview.classList.remove('hidden');
@@ -1303,11 +1307,11 @@ window.guardarConfiguracion = async () => {
     const btn = document.getElementById('btn-save-config');
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Guardando...';
     btn.disabled = true;
-    
+
     const nombre = document.getElementById('conf-nombre').value.trim() || 'OmniPOS';
     const colorP = document.getElementById('conf-color-primary').value;
     const colorA = document.getElementById('conf-color-accent').value;
-    
+
     try {
         await db.collection("Configuracion").doc("global").set({
             nombre_tienda: nombre,
@@ -1315,7 +1319,7 @@ window.guardarConfiguracion = async () => {
             color_accent: colorA,
             logo_b64: tempConfLogoB64 || globalConfig.logo_b64
         }, { merge: true });
-        
+
         showToast("Configuraci&oacute;n guardada", "success");
         await logAuditChange("Configuraci&oacute;n", "Actualizaci&oacute;n General", "global", "Se actualiz&oacute; la configuraci&oacute;n visual de la tienda.");
     } catch (e) {
@@ -1335,18 +1339,18 @@ let currentDashFilter = "mes";
 
 window.setDashFilter = (filter) => {
     currentDashFilter = filter;
-    
+
     document.querySelectorAll(".dash-flt").forEach(btn => {
         btn.classList.remove("bg-white", "shadow", "text-primary");
         btn.classList.add("text-gray-500");
     });
-    
+
     const activeBtn = document.getElementById(`btn-dash-${filter}`);
     if (activeBtn) {
         activeBtn.classList.remove("text-gray-500");
         activeBtn.classList.add("bg-white", "shadow", "text-primary");
     }
-    
+
     renderDashboard();
 };
 
@@ -1356,10 +1360,10 @@ window.renderDashboard = () => {
 
     const now = new Date();
     let startDate = new Date();
-    
+
     let lblText = "Este Mes";
     if (currentDashFilter === "hoy") {
-        startDate.setHours(0,0,0,0);
+        startDate.setHours(0, 0, 0, 0);
         lblText = "Hoy";
     } else if (currentDashFilter === "semana") {
         startDate.setDate(now.getDate() - 7);
@@ -1367,25 +1371,25 @@ window.renderDashboard = () => {
     } else {
         startDate.setDate(now.getDate() - 30);
     }
-    
+
     document.querySelectorAll(".dash-lbl-period").forEach(el => el.textContent = lblText);
-    
-    const ventasFiltradas = ventasGlobal.filter(v => new Date(v.fecha) >= startDate.getTime());
-    const gastosFiltrados = gastosGlobal.filter(g => new Date(g.fecha) >= startDate.getTime());
-    
+
+    const ventasFiltradas = ventasGlobal.filter(v => new Date(v.Fecha) >= startDate.getTime());
+    const gastosFiltrados = gastosGlobal.filter(g => new Date(g.Fecha) >= startDate.getTime());
+
     const ventasTotales = ventasFiltradas.reduce((sum, v) => sum + v.total, 0);
     const gastosTotales = gastosFiltrados.reduce((sum, g) => sum + g.monto, 0);
     const utilidadNeta = ventasTotales - gastosTotales;
-    
+
     document.getElementById("kpi-ventas").textContent = `Q${ventasTotales.toFixed(2)}`;
     document.getElementById("kpi-gastos").textContent = `Q${gastosTotales.toFixed(2)}`;
     document.getElementById("kpi-utilidad").textContent = `Q${utilidadNeta.toFixed(2)}`;
-    
+
     let productCounts = {};
     ventasFiltradas.forEach(v => {
-        if(v.items) {
+        if (v.items) {
             v.items.forEach(item => {
-                if(!productCounts[item.id]) {
+                if (!productCounts[item.id]) {
                     productCounts[item.id] = { name: item.nombre, qty: 0, revenue: 0 };
                 }
                 productCounts[item.id].qty += item.cantidad;
@@ -1393,11 +1397,11 @@ window.renderDashboard = () => {
             });
         }
     });
-    
+
     const top5 = Object.values(productCounts)
         .sort((a, b) => b.qty - a.qty)
         .slice(0, 5);
-        
+
     const topContainer = document.getElementById("dash-top5");
     if (top5.length === 0) {
         topContainer.innerHTML = `<div class="flex items-center justify-center h-full text-gray-400 text-sm">No hay datos suficientes</div>`;
@@ -1405,7 +1409,7 @@ window.renderDashboard = () => {
         topContainer.innerHTML = top5.map((p, i) => `
             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 mb-2">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-accent/20 text-accent font-bold flex items-center justify-center text-sm">${i+1}</div>
+                    <div class="w-8 h-8 rounded-full bg-accent/20 text-accent font-bold flex items-center justify-center text-sm">${i + 1}</div>
                     <div>
                         <p class="font-bold text-sm text-gray-800 line-clamp-1">${p.name}</p>
                         <p class="text-xs text-gray-500">${p.qty} unidades vendidas</p>
@@ -1415,12 +1419,12 @@ window.renderDashboard = () => {
             </div>
         `).join("");
     }
-    
-    
+
+
     // Alertas Bajo Stock
     const bajoContainer = document.getElementById("dash-bajo-stock");
     if (bajoContainer) {
-        const bajos = productosGlobal.filter(p => p.stock <= (p.alerta_minimo || 5)).sort((a,b) => a.stock - b.stock);
+        const bajos = productosGlobal.filter(p => p.stock <= (p.alerta_minimo || 5)).sort((a, b) => a.stock - b.stock);
         if (bajos.length === 0) {
             bajoContainer.innerHTML = `<div class="flex items-center justify-center h-full text-gray-400 text-sm">Inventario en buen estado</div>`;
         } else {
@@ -1438,7 +1442,7 @@ window.renderDashboard = () => {
             `).join("");
         }
     }
-    
+
     renderChart(ventasFiltradas, currentDashFilter);
 
 };
@@ -1446,34 +1450,34 @@ window.renderDashboard = () => {
 function renderChart(ventas, filter) {
     const ctx = document.getElementById("mainChart");
     if (!ctx) return;
-    
+
     let grouped = {};
     ventas.forEach(v => {
-        const d = new Date(v.fecha);
+        const d = new Date(v.Fecha);
         let key = "";
         if (filter === "hoy") {
             key = `${d.getHours()}:00`;
         } else {
-            key = `${d.getDate()}/${d.getMonth()+1}`;
+            key = `${d.getDate()}/${d.getMonth() + 1}`;
         }
         if (!grouped[key]) grouped[key] = 0;
         grouped[key] += v.total;
     });
-    
+
     let labels = [];
     if (filter === "hoy") {
         labels = Object.keys(grouped).sort((a, b) => parseInt(a) - parseInt(b));
     } else {
         labels = Object.keys(grouped).reverse();
     }
-    
+
     let dataPoints = labels.map(l => grouped[l]);
-    
+
     if (mainChart) mainChart.destroy();
-    
+
     const computedStyle = getComputedStyle(document.documentElement);
     const accentColor = computedStyle.getPropertyValue("--color-accent").trim() || "#3B82F6";
-    
+
     mainChart = new Chart(ctx, {
         type: "line",
         data: {
@@ -1514,7 +1518,7 @@ function renderChart(ventas, filter) {
 window.initGastosListener = () => {
     unsubGastos = db.collection("Gastos").onSnapshot(snapshot => {
         gastosGlobal = [];
-        snapshot.forEach(doc => gastosGlobal.push({id: doc.id, ...doc.data()}));
+        snapshot.forEach(doc => gastosGlobal.push({ id: doc.id, ...doc.data() }));
         renderGastos();
         renderDashboard();
     }, error => {
@@ -1524,22 +1528,22 @@ window.initGastosListener = () => {
 
 window.renderGastos = () => {
     const tbody = document.getElementById('tbl-gastos');
-    if(!tbody) return;
+    if (!tbody) return;
     tbody.innerHTML = '';
-    
+
     if (gastosGlobal.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-400">No hay gastos registrados.</td></tr>';
         return;
     }
-    
+
     // Sort descending by date
-    const sorted = [...gastosGlobal].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-    
+    const sorted = [...gastosGlobal].sort((a, b) => new Date(b.Fecha) - new Date(a.Fecha));
+
     sorted.forEach(g => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-gray-50/50 transition-colors';
-        const formattedDate = new Date(g.fecha).toLocaleString();
-        
+        const formattedDate = new Date(g.Fecha).toLocaleString();
+
         tr.innerHTML = `
             <td class="p-4 text-gray-500">${formattedDate}</td>
             <td class="p-4 font-medium text-gray-700">${g.tipo}</td>
@@ -1553,25 +1557,25 @@ window.renderGastos = () => {
 
 document.getElementById('btn-save-gas')?.addEventListener('click', async () => {
     if (!currentUser) return;
-    
+
     const tipo = document.getElementById('gas-tipo').value;
     const concepto = document.getElementById('gas-concepto').value;
     const monto = parseFloat(document.getElementById('gas-monto').value);
-    
+
     if (!concepto || isNaN(monto) || monto <= 0) {
         showToast("Por favor complete los campos correctamente.", "error");
         return;
     }
-    
+
     const newGasto = {
-        fecha: new Date().toISOString(),
+        Fecha: new Date().toISOString(),
         tipo: tipo,
         concepto: concepto,
         monto: monto,
         usuario: currentUser.email || 'Admin',
         id_usuario: currentUser.uid || 'Admin'
     };
-    
+
     try {
         await db.collection("Gastos").add(newGasto);
         logAuditChange("Finanzas", "Gasto Registrado", "N/A", `${tipo}: ${concepto} por Q${monto}`);
@@ -1586,40 +1590,40 @@ document.getElementById('btn-save-gas')?.addEventListener('click', async () => {
 
 window.abrirCierreCaja = () => {
     if (!currentUser) return;
-    
+
     // Calculate today's sales and expenses
     const today = new Date().toISOString().split('T')[0];
-    
+
     let vEfectivo = 0;
     let vTarjeta = 0;
-    
+
     ventasGlobal.forEach(v => {
-        if(v.fecha.startsWith(today)) {
-            if(v.metodo_pago === 'Efectivo') vEfectivo += v.total;
+        if (v.Fecha.startsWith(today)) {
+            if (v.metodo_pago === 'Efectivo') vEfectivo += v.total;
             else vTarjeta += v.total;
         }
     });
-    
+
     let gDia = 0;
     gastosGlobal.forEach(g => {
-        if(g.fecha.startsWith(today)) {
+        if (g.Fecha.startsWith(today)) {
             gDia += g.monto;
         }
     });
-    
+
     // Efectivo esperado = Ventas Efectivo - Gastos
     const esperado = vEfectivo - gDia;
-    
+
     document.getElementById('cc-ventas-efectivo').innerText = `Q${vEfectivo.toFixed(2)}`;
     document.getElementById('cc-ventas-tarjeta').innerText = `Q${vTarjeta.toFixed(2)}`;
     document.getElementById('cc-gastos-dia').innerText = `- Q${gDia.toFixed(2)}`;
     document.getElementById('cc-esperado').innerText = `Q${esperado.toFixed(2)}`;
-    
+
     document.getElementById('cc-esperado').dataset.val = esperado;
     document.getElementById('cc-real').value = '';
     document.getElementById('cc-notas').value = '';
     document.getElementById('cc-diferencia-box').className = 'hidden';
-    
+
     openModal('mod-cierre');
 };
 
@@ -1627,11 +1631,11 @@ window.calcCierreDiferencia = () => {
     const esperado = parseFloat(document.getElementById('cc-esperado').dataset.val || 0);
     const real = parseFloat(document.getElementById('cc-real').value || 0);
     const diffBox = document.getElementById('cc-diferencia-box');
-    
+
     const diff = real - esperado;
     diffBox.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700');
-    
-    if(diff === 0) {
+
+    if (diff === 0) {
         diffBox.classList.add('bg-green-100', 'text-green-700');
         diffBox.innerText = "Caja Cuadrada Exactamente";
     } else if (diff < 0) {
@@ -1645,19 +1649,19 @@ window.calcCierreDiferencia = () => {
 
 document.getElementById('btn-save-cierre')?.addEventListener('click', async () => {
     if (!currentUser) return;
-    
+
     const real = parseFloat(document.getElementById('cc-real').value);
-    if(isNaN(real)) {
+    if (isNaN(real)) {
         return showToast("Ingrese el efectivo real.", "error");
     }
-    
+
     const vEfectivo = document.getElementById('cc-ventas-efectivo').innerText;
     const vTarjeta = document.getElementById('cc-ventas-tarjeta').innerText;
     const esperado = parseFloat(document.getElementById('cc-esperado').dataset.val);
     const notas = document.getElementById('cc-notas').value;
-    
+
     const cierre = {
-        fecha: new Date().toISOString(),
+        Fecha: new Date().toISOString(),
         ventas_efectivo: vEfectivo,
         ventas_tarjeta: vTarjeta,
         esperado: esperado,
@@ -1666,19 +1670,19 @@ document.getElementById('btn-save-cierre')?.addEventListener('click', async () =
         notas: notas,
         usuario: currentUser.email
     };
-    
+
     try {
         await db.collection("Cierres_Caja").add(cierre);
-        logAuditChange("Finanzas", "Cierre de Caja", "N/A", `Cierre realizado. Diferencia: Q${(real-esperado).toFixed(2)}`);
+        logAuditChange("Finanzas", "Cierre de Caja", "N/A", `Cierre realizado. Diferencia: Q${(real - esperado).toFixed(2)}`);
         showToast("Turno Finalizado Correctamente.");
         closeModal('mod-cierre');
-    } catch(e) {
+    } catch (e) {
         showToast("Error al guardar el cierre.", "error");
     }
 });
 
 document.getElementById('srch-inv')?.addEventListener('input', () => {
-    if(typeof renderInventario === 'function') renderInventario();
+    if (typeof renderInventario === 'function') renderInventario();
 });
 
 window.renderInventario = () => {
@@ -1686,7 +1690,7 @@ window.renderInventario = () => {
     const srch = document.getElementById('srch-inv');
     if (!tbody) return;
     const filter = (srch ? srch.value.toLowerCase() : '');
-    
+
     let html = '';
     let totProd = 0;
     let totCosto = 0;
@@ -1694,12 +1698,12 @@ window.renderInventario = () => {
 
     let filtered = productosGlobal;
     if (filter) {
-        filtered = productosGlobal.filter(p => 
-            String(p.nombre).toLowerCase().includes(filter) || 
+        filtered = productosGlobal.filter(p =>
+            String(p.nombre).toLowerCase().includes(filter) ||
             String(p.categoria).toLowerCase().includes(filter)
         );
     }
-    
+
     filtered.sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
 
     filtered.forEach(p => {
@@ -1747,7 +1751,7 @@ window.renderInventario = () => {
     if (elTotProd) elTotProd.innerText = totProd;
     if (elTotCosto) elTotCosto.innerText = 'Q' + totCosto.toFixed(2);
     if (elTotIngreso) elTotIngreso.innerText = 'Q' + totIngreso.toFixed(2);
-    
+
     const elTotGanancia = document.getElementById('inv-total-ganancia');
     if (elTotGanancia) elTotGanancia.innerText = 'Q' + (totIngreso - totCosto).toFixed(2);
 };
@@ -1772,7 +1776,7 @@ window.editProducto = (id) => {
     document.getElementById('prod-prov-nombre').value = p.proveedor_nombre || '';
     document.getElementById('prod-prov-tel').value = p.proveedor_tel || '';
     document.getElementById('prod-prov-correo').value = p.proveedor_correo || '';
-    
+
     currentImageBase64 = null;
     if (p.imagen_url) {
         prodImgPreview.src = p.imagen_url;
@@ -1783,7 +1787,7 @@ window.editProducto = (id) => {
         prodImgPreview.classList.add('hidden');
         prodImgPlaceholder.classList.remove('hidden');
     }
-    
+
     openModal('mod-producto');
 };
 
@@ -1793,7 +1797,7 @@ window.deleteProducto = async (id) => {
         const p = productosGlobal.find(x => x.id === id);
         await db.collection("Productos").doc(id).delete();
         showToast("Producto eliminado", "success");
-        if(p) logAuditChange('Inventario', 'Eliminar Producto', id, `Producto ${p.nombre} eliminado.`);
+        if (p) logAuditChange('Inventario', 'Eliminar Producto', id, `Producto ${p.nombre} eliminado.`);
     } catch (error) {
         console.error(error);
         showToast("Error al eliminar", "error");
