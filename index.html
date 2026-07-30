@@ -523,42 +523,6 @@
                     </div>
                 </div>
 
-                <!-- Tab: Auditor&iacute;a -->
-                <div id="tab-audit" class="tab-content hidden-view w-full h-full p-4 lg:p-6">
-                    <div class="bg-surface rounded-2xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
-                        <div class="mb-6">
-                            <h3 class="text-lg font-bold">Historial de Auditor&iacute;a</h3>
-                            <p class="text-sm text-gray-500">Registro de todos los cambios realizados en el sistema.</p>
-                        </div>
-                        <div class="mb-4">
-                            <div class="relative max-w-md">
-                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                                    <i class="fa-solid fa-magnifying-glass"></i>
-                                </span>
-                                <input type="text" id="srch-audit" placeholder="Buscar por m&oacute;dulo, acci&oacute;n o usuario..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none" oninput="renderAuditoria()">
-                            </div>
-                        </div>
-                        <div class="flex-1 overflow-x-auto border border-gray-200 rounded-xl relative">
-                            <table class="w-full text-left border-collapse min-w-max">
-                                <thead>
-                                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
-                                        <th class="p-4 font-semibold">Fecha</th>
-                                        <th class="p-4 font-semibold">Usuario</th>
-                                        <th class="p-4 font-semibold">M&oacute;dulo</th>
-                                        <th class="p-4 font-semibold">Acci&oacute;n</th>
-                                        <th class="p-4 font-semibold">Detalle</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbl-auditoria" class="text-sm divide-y divide-gray-100 bg-white">
-                                    <tr>
-                                        <td colspan="5" class="p-8 text-center text-gray-400">Cargando auditor&iacute;a...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Tab: Reportes (Dashboard) -->
                 <div id="tab-reports" class="tab-content hidden-view w-full h-full p-4 lg:p-6 overflow-y-auto">
                     <div class="max-w-7xl mx-auto space-y-6">
@@ -720,35 +684,6 @@
     
 
 
-    <!-- Tab: Gastos -->
-    <div id="tab-gastos" class="tab-content hidden-view w-full h-full p-4 lg:p-6 overflow-y-auto">
-        <div class="bg-surface rounded-2xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-bold">Registro de Gastos</h3>
-                <button onclick="openModal(`mod-gasto`)" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-plus"></i> Registrar Gasto
-                </button>
-            </div>
-            
-            <div class="flex-1 overflow-x-auto border border-gray-200 rounded-xl relative">
-                <table class="w-full text-left border-collapse min-w-max">
-                    <thead>
-                        <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
-                            <th class="p-4 font-semibold">Fecha</th>
-                            <th class="p-4 font-semibold">Tipo</th>
-                            <th class="p-4 font-semibold">Concepto</th>
-                            <th class="p-4 font-semibold">Registrado Por</th>
-                            <th class="p-4 font-semibold text-right">Monto</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbl-gastos" class="text-sm divide-y divide-gray-100 bg-white">
-                        <tr><td colspan="5" class="p-8 text-center text-gray-400">Cargando gastos...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    
     <!-- Modal: Nuevo/Editar Producto -->
     <div id="mod-producto" class="fixed inset-0 bg-primary/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 transition-opacity duration-300 opacity-0">
         <div class="bg-surface w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-full">
@@ -946,43 +881,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
-    <!-- Firebase Config & App Logic -->
-    
-
-
-
-    
-
-
-    <!-- Tab: Gastos -->
-    <div id="tab-gastos" class="tab-content hidden-view w-full h-full p-4 lg:p-6 overflow-y-auto">
-        <div class="bg-surface rounded-2xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-bold">Registro de Gastos</h3>
-                <button onclick="openModal(`mod-gasto`)" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-plus"></i> Registrar Gasto
-                </button>
-            </div>
-            
-            <div class="flex-1 overflow-x-auto border border-gray-200 rounded-xl relative">
-                <table class="w-full text-left border-collapse min-w-max">
-                    <thead>
-                        <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
-                            <th class="p-4 font-semibold">Fecha</th>
-                            <th class="p-4 font-semibold">Tipo</th>
-                            <th class="p-4 font-semibold">Concepto</th>
-                            <th class="p-4 font-semibold">Registrado Por</th>
-                            <th class="p-4 font-semibold text-right">Monto</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbl-gastos" class="text-sm divide-y divide-gray-100 bg-white">
-                        <tr><td colspan="5" class="p-8 text-center text-gray-400">Cargando gastos...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    
     <!-- Modal: Nuevo Gasto -->
     <div id="mod-gasto" class="fixed inset-0 bg-primary/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 transition-opacity duration-300 opacity-0">
         <div class="bg-surface w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300">
